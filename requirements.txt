@@ -7,7 +7,7 @@ streamlit-webrtc==0.47.0
 av
 numpy
 pandas
-scikit-learn
+scikit-learn==1.6.1
 scipy
 Pillow
 plotly
