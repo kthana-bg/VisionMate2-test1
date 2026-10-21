@@ -10,6 +10,7 @@ if _ROOT not in sys.path:
 from utils.frame_processor import FrameResult, load_mediapipe_landmarkers
 from utils.beep_alert import BeepAlert, play_beep
 from utils.voice_alert import maybe_speak_alert, render_voice_controls
+from utils.mobile_support import keep_awake, notify_alert, render_notification_button
 from database.db_manager import save_health_metric
 
 
@@ -166,6 +167,34 @@ def _render_metrics_panel(result: FrameResult, eye_model_name: str, posture_mode
     )
 
 
+CAMERA_PRESETS = {
+    "Standard (640x480)": (640, 480, 20),
+    "Battery saver (480x360)": (480, 360, 15),
+    "Low (320x240)": (320, 240, 10),
+}
+
+
+def _render_device_settings():
+    """Settings for phones, tablets and background use."""
+    with st.expander("Phone, tablet and background settings", expanded=False):
+        st.selectbox(
+            "Camera quality",
+            list(CAMERA_PRESETS.keys()),
+            index=0,
+            key="camera_quality",
+            help="Use Battery saver or Low on phones to reduce battery and data use. "
+                 "Changing this restarts the camera.",
+        )
+        st.toggle("Keep screen on while monitoring", value=True, key="keep_awake_enabled")
+        st.toggle("Vibrate on alerts (Android phones)", value=True, key="vibrate_enabled")
+        render_notification_button()
+        st.caption(
+            "A web page cannot use the camera while the screen is off. On a phone or tablet, keep this "
+            "page open with the screen on (prop the device facing you). On a laptop you can switch to other "
+            "tabs or apps: you will still hear the alert, and the tab title shows a warning."
+        )
+
+
 def render_monitoring_tab(
     processor,
     eye_model_name: str,
@@ -199,10 +228,12 @@ def render_monitoring_tab(
             beep_alert.reset_all()
 
     render_voice_controls()
+    _render_device_settings()
 
     st.divider()
 
     if not st.session_state.get("monitoring_active", False):
+        keep_awake(False)
         st.info("Click Start Session to begin live monitoring.")
         return
 
@@ -236,13 +267,21 @@ def render_monitoring_tab(
     with feed_col:
         rtc_config = RTCConfiguration(_get_rtc_configuration())
 
+        quality = st.session_state.get("camera_quality", "Standard (640x480)")
+        cam_w, cam_h, cam_fps = CAMERA_PRESETS.get(quality, CAMERA_PRESETS["Standard (640x480)"])
+
         ctx = webrtc_streamer(
-            key="visionmate-live",
+            key=f"visionmate-live-{cam_w}x{cam_h}",
             mode=WebRtcMode.SENDRECV,
             rtc_configuration=rtc_config,
             video_transformer_factory=VisionMateTransformer,
             media_stream_constraints={
-                "video": {"width": {"ideal": 640}, "height": {"ideal": 480}},
+                "video": {
+                    "width": {"ideal": cam_w},
+                    "height": {"ideal": cam_h},
+                    "frameRate": {"ideal": cam_fps},
+                    "facingMode": "user",
+                },
                 "audio": False,
             },
             async_processing=True,
@@ -266,6 +305,8 @@ def render_monitoring_tab(
             )
             st.caption(f"Session duration: {timer_str}")
 
+        keep_awake(st.session_state.get("keep_awake_enabled", True))
+
     with analysis_col:
         result = ctx.video_transformer.get_result() if ctx and ctx.video_transformer else FrameResult()
         _render_metrics_panel(result, eye_model_name, posture_model_name)
@@ -281,6 +322,14 @@ def render_monitoring_tab(
                 result.posture_status,
                 (st.session_state.get("user") or {}).get("full_name"),
             )
+            if eye_alert and posture_alert:
+                alert_body = "Eye strain and slouching detected. Take a short break and sit up straight."
+            elif eye_alert:
+                alert_body = "Eye strain detected. Look away from the screen for a moment."
+            else:
+                alert_body = "Slouching detected. Sit up straight and relax your shoulders."
+            notify_alert("VisionMate alert", alert_body,
+                         vibrate=st.session_state.get("vibrate_enabled", True))
 
         last_save = st.session_state.get("last_metric_save", 0)
         if time.time() - last_save >= 5 and result.face_detected:
