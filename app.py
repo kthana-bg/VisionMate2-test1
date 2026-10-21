@@ -37,9 +37,25 @@ st.markdown("""
         padding: 12px;
     }
     .block-container { padding-top: 1rem; }
+
+    /* ---------- phones and tablets ---------- */
+    @media (max-width: 768px) {
+        .block-container { padding: 0.75rem 0.6rem 3rem 0.6rem !important; }
+        h1, h2 { font-size: 1.4rem !important; }
+        .stTabs [data-baseweb="tab-list"] { overflow-x: auto; gap: 2px; }
+        .stTabs [data-baseweb="tab"] { padding: 8px 12px; font-size: 13px; white-space: nowrap; }
+        .stButton > button { min-height: 48px; width: 100%; }
+        div[data-testid="metric-container"] { padding: 8px; }
+        video { max-width: 100% !important; height: auto !important; }
+        .js-plotly-plot, .plotly { max-width: 100% !important; }
+    }
+    @media (max-width: 480px) {
+        [data-testid="stHorizontalBlock"] { gap: 0.5rem; }
+    }
 </style>
 """, unsafe_allow_html=True)
 
+from utils.mobile_support import inject_head_tags
 from pages.auth_page import render_auth_page
 from pages.monitoring_tab import render_monitoring_tab
 from pages.comparison_tab import render_comparison_tab
@@ -110,6 +126,7 @@ def render_sidebar():
 
 def main():
     init_session_state()
+    inject_head_tags()
 
     if not st.session_state.get("logged_in"):
         render_auth_page()
