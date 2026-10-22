@@ -1,14 +1,3 @@
-"""Voice guidance for VisionMate.
-
-Speaks short coaching messages with a pre-trained Piper TTS voice (ONNX, CPU only).
-The model files live in assets/voice/:
-    visionmate-voice.onnx
-    visionmate-voice.onnx.json
-    voice_settings.json          (optional: {"length_scale": 1.0})
-
-If Piper or the model is missing, every function here degrades quietly so the
-monitoring tab keeps working (the beep still plays).
-"""
 import base64
 import io
 import json
@@ -43,7 +32,6 @@ TEST_MESSAGE = "Voice guidance is on. I will remind you to rest your eyes and si
 
 
 def first_name(full_name):
-    """'KEERTHANA D/O BALE MURALI' -> 'Keerthana'. Returns None if there is no usable name."""
     if not full_name:
         return None
     token = str(full_name).strip().split()[0] if str(full_name).strip() else ""
