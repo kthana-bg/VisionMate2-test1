@@ -1,17 +1,3 @@
-"""Phone / tablet / background support for VisionMate.
-
-A web page cannot keep using the camera while a phone's screen is off, so "background" support
-here means the things a browser CAN do:
-
-  * keep_awake()            - Screen Wake Lock, so the phone/tablet does not sleep during a session
-  * notify_alert()          - vibration, tab-title warning and a desktop notification when the tab is hidden
-  * render_notification_button() - one-tap permission for desktop notifications
-  * inject_head_tags()      - "Add to Home Screen" / full-screen metadata
-
-All of it runs as small JavaScript snippets through components.html, and talks to the parent page
-(the iframe Streamlit creates is same-origin). Every snippet is wrapped in try/catch so an
-unsupported browser simply does nothing.
-"""
 import json
 
 import streamlit as st
