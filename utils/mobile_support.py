@@ -15,7 +15,7 @@ def _js_string(value):
 
 
 # ----------------------------------------------------------------------------
-# HTML builders (pure functions, easy to test)
+# HTML builders
 # ----------------------------------------------------------------------------
 def build_head_tags_html():
     return """
